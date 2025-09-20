@@ -1,0 +1,63 @@
+<!-- Send Alert to Parents -->
+<div class="card">
+  <h3>Send Alert to Parents</h3>
+  <form id="sendAlertForm">
+    <label>Alert Type</label>
+    <select name="type" required>
+      <option>Earthquake</option>
+      <option>Fire</option>
+      <option>Flood</option>
+      <option>Closure</option>
+    </select>
+    <label>Class</label>
+    <input name="class" value="ClassA" required />
+    <label>Message</label>
+    <input name="message" placeholder="E.g. Earthquake detected. School is taking safety measures." />
+    <div style="margin-top:8px;display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-primary" type="submit">Send Alert</button>
+    </div>
+  </form>
+  <div id="sendResult" class="small"></div>
+</div>
+
+<!-- Bulk upload CSV -->
+<div class="card" style="margin-top:12px">
+  <h3>Bulk Upload Students (CSV)</h3>
+  <form id="uploadForm" enctype="multipart/form-data">
+    <input type="file" name="file" accept=".csv" required />
+    <div style="margin-top:8px;display:flex;justify-content:flex-end">
+      <button class="btn btn-primary" type="submit">Upload CSV</button>
+    </div>
+  </form>
+  <div id="uploadResult" class="small"></div>
+</div>
+
+<script>
+  // SEND ALERT
+  document.getElementById('sendAlertForm').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const payload = {
+      type: fd.get('type'),
+      class: fd.get('class'),
+      message: fd.get('message') || ''
+    };
+    const res = await fetch('/send-alert', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    document.getElementById('sendResult').innerText = data.success ? `Alert request processed. Sent: ${data.sent} / ${data.total}` : 'Error: '+data.message;
+  });
+
+  // UPLOAD CSV
+  document.getElementById('uploadForm').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const form = e.target;
+    const fd = new FormData(form);
+    const res = await fetch('/upload-students', { method:'POST', body: fd });
+    const data = await res.json();
+    document.getElementById('uploadResult').innerText = data.success ? `Inserted ${data.inserted || data.inserted} students (errors: ${data.errors.length})` : 'Upload failed';
+  });
+</script>

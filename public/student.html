@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Student Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h2>Welcome, <span id="studentName"></span> (Class <span id="studentClass"></span>)</h2>
+
+    <!-- ALERTS -->
+    <div class="card" id="alertBox">
+      <h3>Alerts</h3>
+      <p>No active alerts.</p>
+    </div>
+
+    <!-- LESSONS -->
+    <div class="card">
+      <h3>Lessons</h3>
+      <ul>
+  <li><a href="/resources/posters/fire.jpg" target="_blank">🔥 Fire Safety</a></li>
+  <li><a href="/resources/posters/earthquake.jpg" target="_blank">🌍 Earthquake Preparedness</a></li>
+  <li><a href="/resources/posters/flood.jpg" target="_blank">🌊 Flood Safety</a></li>
+</ul>
+    </div>
+
+    <!-- VIDEOS -->
+    <div class="card">
+      <h3>Safety Videos</h3>
+      <video src="/resources/videos/fire.mp4" width="400" controls></video>
+<video src="/resources/videos/earthquake.mp4" width="400" height="200" controls></video>
+<video src="/resources/videos/flood.mp4" width="400" controls></video>
+    </div>
+
+    <!-- QUIZ -->
+    <div class="card">
+      <h3>Quiz</h3>
+      <button onclick="startQuiz()">Start Quiz</button>
+      <div id="quizArea"></div>
+    </div>
+
+    <!-- LEADERBOARD -->
+    <div class="card">
+      <h3>Leaderboard</h3>
+      <ul id="leaderboard"></ul>
+    </div>
+  </div>
+
+  <script>
+    const student = JSON.parse(sessionStorage.getItem('user') || '{}');
+    document.getElementById('studentName').innerText = student.name;
+    document.getElementById('studentClass').innerText = student.class;
+
+    const socket = io();
+    socket.emit('join', { role: 'student', class: student.class, userId: student.id });
+
+    socket.on('alert', (alert) => {
+      document.getElementById('alertBox').innerHTML = `
+        <h3>🚨 ${alert.type} Alert</h3>
+        <p>${alert.message}</p>
+        <button onclick="markSafe(${alert.id})">I'm Safe</button>
+      `;
+    });
+
+    function markSafe(drillId){
+      fetch('/mark-safe', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ drillId, studentId: student.id })
+      }).then(r=>r.json()).then(data=>{
+        if(data.success){
+          document.getElementById('alertBox').innerHTML = "<p>✅ You marked yourself safe.</p>";
+        }
+      });
+    }
+
+    // Simple quiz example
+    const questions = [
+      {q:"What to do during earthquake?", a:["Run outside","Hide under table","Stand near glass"], correct:1},
+      {q:"What number to call in fire emergency?", a:["100","101","102"], correct:1}
+    ];
+    let current=0, score=0;
+
+    function startQuiz(){
+      showQuestion();
+    }
+    function showQuestion(){
+      if(current>=questions.length){
+        document.getElementById('quizArea').innerHTML = `Quiz finished! Score: ${score}/${questions.length}`;
+        // save score (later: update leaderboard)
+        return;
+      }
+      const q = questions[current];
+      let html = `<p>${q.q}</p>`;
+      q.a.forEach((opt,i)=>{
+        html += `<button onclick="answer(${i})">${opt}</button><br>`;
+      });
+      document.getElementById('quizArea').innerHTML = html;
+    }
+    function answer(i){
+      if(i===questions[current].correct) score++;
+      current++;
+      showQuestion();
+    }
+  </script>
+</body>
+</html>
