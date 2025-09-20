@@ -1,1 +1,48 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"><title>Login</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container center">
+    <h2 id="loginTitle">Login</h2>
+    <form id="loginForm" class="card">
+      <label>USN / Username</label>
+      <input type="text" name="username" required />
+      <br><br>
+      <label>Password (DOB: YYYY-MM-DD)</label>
+      <input type="password" name="password" required />
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+        <button class="btn btn-primary" type="submit">Login</button>
+        <a href="index.html" class="btn btn-outline">Back</a>
+      </div>
+    </form>
+    <div style="margin-top:12px" class="small">If teacher: you can add students after login.</div>
+  </div>
 
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const role = params.get('role') || 'student';
+    document.getElementById('loginTitle').innerText = role === 'teacher' ? 'Teacher Login' : 'Student Login';
+
+    document.getElementById('loginForm').addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const username = fd.get('username').trim();
+      const password = fd.get('password').trim();
+      const res = await fetch('/login', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ role, username, password })
+      });
+      const data = await res.json();
+      if(!data.success){ alert('Login failed: '+data.message); return; }
+      // store user in sessionStorage
+      sessionStorage.setItem('user', JSON.stringify({ ...data.user, role }));
+      // redirect
+      window.location.href = role === 'teacher' ? 'teacher.html' : 'student.html';
+    });
+  </script>
+</body>
+</html>
